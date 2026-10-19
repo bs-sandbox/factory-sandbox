@@ -1,0 +1,24 @@
+# LIVTECH Factory CODEOWNERS — generated from policy.yaml (git_gates.ownership_gate).
+# Do not edit by hand; regenerate from the policy.
+#
+# Each path lists its owner AND its second approver. GitHub accepts approval from
+# any listed owner, so CODEOWNERS alone cannot express 'owner, unless the owner
+# authored the change'. The required status check factory/ownership-gate enforces
+# that rule precisely. Branch protection must require both this file's code-owner
+# review and the factory/ownership-gate and factory/jira-gate checks.
+
+# Default: every change needs Code Review.
+*    @bs-sandbox/code-review-bot
+
+/tests/acceptance/**    @bs-sandbox/qa-bot @bs-sandbox/code-review-bot
+/tests/quarantine/**    @bs-sandbox/qa-bot @bs-sandbox/code-review-bot
+/infra/**    @bs-sandbox/devops-bot @bs-sandbox/security-bot
+/.ci/**    @bs-sandbox/devops-bot @bs-sandbox/security-bot
+/.github/workflows/**    @bs-sandbox/devops-bot @bs-sandbox/security-bot
+/.github/CODEOWNERS    @bs-sandbox/security-bot @bs-sandbox/security-owners
+/db/migrations/**    @bs-sandbox/data-bot @bs-sandbox/architect-bot
+/pipelines/**    @bs-sandbox/data-bot @bs-sandbox/architect-bot
+/security/**    @bs-sandbox/security-bot @bs-sandbox/security-owners
+/docs/adr/**    @bs-sandbox/architect-bot @bs-sandbox/code-review-bot @bs-sandbox/engineering-owners
+/contracts/**    @bs-sandbox/architect-bot @bs-sandbox/code-review-bot @bs-sandbox/engineering-owners
+/architecture/**    @bs-sandbox/architect-bot @bs-sandbox/code-review-bot @bs-sandbox/engineering-owners
