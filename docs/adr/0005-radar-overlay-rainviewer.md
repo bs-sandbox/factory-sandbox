@@ -50,7 +50,9 @@ Decision:
 3. Strict response validation. Any failure counts as "radar unavailable":
    - the response is not 2xx, the body is not JSON, or `radar.past` is not a non-empty
      array;
-   - the chosen `time` is not a positive safe integer;
+   - the chosen `time` is not an integer number in 1..8640000000000 (unix seconds; the
+     upper bound is the ECMAScript Date range, a constant that never depends on the
+     browser clock, so formatting can't throw a RangeError; LIV-17 THREAT-MODEL T2a);
    - the chosen `path` does not match `^/v2/radar/[A-Za-z0-9_-]{1,64}$`.
 
    The response's `host` field is ignored. The tile host is the constant
@@ -77,7 +79,10 @@ Decision:
    - `locationMap.leafletMap` is null when the radar is turned on;
    - the layer's first `load` event comes with zero `tileload` and at least one `tileerror`;
    - 15 s pass with no `tileload`;
-   - set-up throws.
+   - set-up throws, or any Leaflet event handler, timer callback or promise callback
+     throws. Every such callback wraps its body in `try/catch` and fails closed, because
+     Leaflet callbacks run outside the fetch promise chain and an escaped exception would
+     leave the state stuck in "loading" (LIV-17 THREAT-MODEL T2b).
 
    On failure the layer is removed, the toggle is unchecked, no timestamp is shown, and
    "Radar is unavailable right now." is shown (S6). The radar counts as "on", and the
@@ -100,7 +105,9 @@ Decision:
    - `app.js` creates it with the LIV-16 map controller.
    - No new npm dependency.
 10. CSP (ADR 0004 decision 7): add `https://api.rainviewer.com` to `connect-src` and
-    `https://tilecache.rainviewer.com` to `img-src`. Nothing else changes.
+    `https://tilecache.rainviewer.com` to `img-src`. Nothing else changes. The CSP test
+    asserts the exact value of every directive, not only that the hosts are present
+    (LIV-17 THREAT-MODEL T4).
 11. Privacy:
     - The frame request carries no location.
     - Tile requests carry only z/x/y at z≤7, about 313 km per tile at the equator, so
