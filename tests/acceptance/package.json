@@ -1,0 +1,13 @@
+{
+  "name": "factory-sandbox-acceptance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "QA-owned browser acceptance tests. Isolated from the app: its own dependencies, nothing in the shipped site.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}
