@@ -2,7 +2,10 @@
 
 Version: 1.0.0. Status: Proposed with ADR 0001.
 Revision note: §4a was added before first merge to align with ADR 0004 (page shell). It
-neither removes nor renames anything, so the version stays at 1.0.0.
+neither removes nor renames anything, so the version stays at 1.0.0. A second pre-merge
+revision applies the LIV-16 threat model conditions C1 (tile `crossOrigin: "anonymous"`,
+§4) and C2 (constant-only HTML sinks and no `map.locate`, §1 rules), and states the S14
+input validation. The contract has never been merged, so it stays at 1.0.0.
 Changes are backward compatible by default. Renaming or removing anything below is a
 breaking change and needs a new version (Tier 3).
 
@@ -52,6 +55,15 @@ Rules:
   log them.
 - The only network requests the module causes are GETs of `tileUrl` with z/x/y filled
   in, plus same-origin loads of `vendor/leaflet/*` (script, CSS, marker images).
+- Validation (S14): a `setLocation` call is ignored unless both arguments are
+  `typeof "number"` and `Number.isFinite`, lat is in [-90, 90] and lon is in [-180, 180].
+  An ignored call keeps the centre, the marker and the state, and causes no tile request.
+- HTML sinks: only compile-time constant strings reach Leaflet options or methods that
+  render HTML. The module uses no popup, tooltip or layers control. `options.tileUrl` and
+  `options.attribution` are for unit tests only. `app.js` never passes them, and they are
+  never built from runtime data.
+- The module never calls `map.locate()` or `map.stopLocate()` and never sets the `locate`
+  option. The location comes only from `setLocation`.
 
 ## 2. DOM contract (stable selectors QA targets)
 
@@ -98,8 +110,11 @@ counters reset, the state goes to `loading`, and the map is shown again.
 ## 4. External interface consumed: OSM standard tile server
 
 - `GET https://tile.openstreetmap.org/{z}/{x}/{y}.png`, image/png, 256×256, z 0–19.
-- Requests are `<img>` loads with no `crossOrigin` and no credentials set by the app, and
-  the browser's default Referer policy.
+- Requests are `<img>` loads with `crossOrigin="anonymous"` (Leaflet tile layer option
+  `crossOrigin: "anonymous"`): CORS mode, credentials omitted, so no Cookie header is sent
+  (S13). The server returns `Access-Control-Allow-Origin: *`. The browser's default
+  Referer policy (`strict-origin-when-cross-origin`) applies, so the Referer is the page
+  origin only.
 - Terms: https://operations.osmfoundation.org/policies/tiles/ (attribution, no bulk or
   prefetch, valid Referer).
 
@@ -124,3 +139,9 @@ counters reset, the state goes to `loading`, and the map is shown again.
   PNG for S1–S5, S7, and S8, abort for S6. For S7, check every request URL against
   `^https://tile\.openstreetmap\.org/\d+/\d+/\d+\.png$`, or same-origin, or the weather
   service owned by LIV-13.
+- S13: set a cookie for `tile.openstreetmap.org` in the browser context before load, then
+  assert that every intercepted tile request has no `Cookie` header and a `Referer` that is
+  absent or equals the page origin plus `/`.
+- S14: unit tests call `setLocation` with `(91, 0)`, `(0, -181)`, `("47.6", -122.3)`,
+  `(NaN, 0)` and `(Infinity, 0)`, and assert that the centre, the marker and the state are
+  unchanged and that no `setView` call is made.

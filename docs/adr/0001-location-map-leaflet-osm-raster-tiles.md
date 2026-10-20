@@ -38,6 +38,10 @@ Decision:
    - the browser's default Referer policy (`strict-origin-when-cross-origin`) is kept, so
      the tile service receives the page origin only. No page sets `no-referrer`, because the
      policy requires a valid Referer.
+   - the OSM tile layer sets `crossOrigin: "anonymous"`. Tiles load in CORS mode with
+     credentials omitted, so no `tile.openstreetmap.org` cookie is sent (LIV-16 S13,
+     threat model T3). The tile server answers with `Access-Control-Allow-Origin: *`.
+     The default Referer policy above is unchanged by this.
 5. Coordinates are never written to the page URL (path, query, or hash), cookies, or any
    Web Storage or IndexedDB. Leaflet 1.9.4 uses none of these. Checked by grepping
    `dist/leaflet-src.esm.js` for `localStorage`, `sessionStorage`, `indexedDB`, and
@@ -64,6 +68,18 @@ Decision:
      styles from JavaScript, and `style-src 'self'` does not block that.
    - The CSP Node test asserts the exact, complete value of every directive, the rule
      set by `contracts/ui/radar-overlay.md` §4.
+9. Security rules from the LIV-16 threat model:
+   - Leaflet HTML sinks (T4): only compile-time constant strings may reach Leaflet options
+     or methods that render HTML (attribution, `bindPopup`, `bindTooltip`, `setContent`,
+     the layers control). The module uses no popup, tooltip or layers control. The
+     `tileUrl` and `attribution` options exist for unit tests only. `src/js/app.js` never
+     sets them, and never from runtime data such as a city name or geocoding fields.
+   - No second location source (T8): `location-map.js` never calls `map.locate()` or
+     `map.stopLocate()` and never uses the `locate` option. LIV-13's location source is
+     the only one.
+   - Input validation (T7): `setLocation` ignores the call unless both arguments are
+     `typeof "number"`, `Number.isFinite`, lat is in [-90, 90] and lon is in [-180, 180].
+     An ignored call changes nothing and requests no tile (LIV-16 S14).
 
 Alternatives:
 - MapLibre GL JS with vector tiles (for example OpenFreeMap): rejected. It is a much
@@ -90,8 +106,8 @@ Consequences:
 - The tile service learns the user's approximate location (the tile at z15 is about 1.2 km
   wide at the equator) and their IP address. The Epic accepts this ("latitude and
   longitude in requests to the ... tile services"), and sending only tile coordinates
-  reduces it further. Security's threat model on LIV-16 is the authority on whether more
-  controls (for example a CSP `img-src` allow-list) are required.
+  reduces it further. Security's threat model on LIV-16 (Jira comment 10224) confirms this
+  residual risk and adds the controls in items 4 (`crossOrigin`) and 9.
 - The build now needs `node_modules` (after `npm ci`) to produce the vendored files. This
   is already true in CI and Pages.
 - Follow-up: upgrading Leaflet is a normal dependency bump plus a re-check of item 5.
