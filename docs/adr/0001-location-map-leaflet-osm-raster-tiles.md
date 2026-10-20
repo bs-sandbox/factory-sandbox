@@ -50,6 +50,20 @@ Decision:
    `contracts/ui/location-map.md`. The page shell and location source (LIV-13) and city
    search (LIV-14) call it. It never throws into the page: every failure becomes the
    "Map is unavailable right now." state.
+8. Composition and CSP (aligned with ADR 0004, merged after this ADR was first proposed):
+   - `src/js/app.js` creates the map with `createLocationMap(...)` and appends it to the
+     `consumers` list. The shell's `setLocationAll` reaches it for both the geolocation
+     result and LIV-14's `onPlaceSelected` (`contracts/ui/current-conditions.md` §1.5).
+     The map does not import the location source or city search.
+   - The `<section data-testid="map-section">` is the last feature section in
+     `src/index.html`. It links `vendor/leaflet/leaflet.css` and `css/location-map.css`
+     with relative URLs. It has no `style=` attribute and no inline `<style>`.
+   - The CSP from ADR 0004 changes by exactly one source: `https://tile.openstreetmap.org`
+     is added to `img-src`. No other directive changes and no wildcard is used. The
+     marker images and Leaflet CSS are same-origin (`'self'`). Leaflet sets element
+     styles from JavaScript, and `style-src 'self'` does not block that.
+   - The CSP Node test asserts the exact, complete value of every directive, the rule
+     set by `contracts/ui/radar-overlay.md` §4.
 
 Alternatives:
 - MapLibre GL JS with vector tiles (for example OpenFreeMap): rejected. It is a much

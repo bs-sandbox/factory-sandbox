@@ -1,6 +1,8 @@
 # UI and module contract: location map (LIV-16)
 
 Version: 1.0.0. Status: Proposed with ADR 0001.
+Revision note: §4a was added before first merge to align with ADR 0004 (page shell). It
+neither removes nor renames anything, so the version stays at 1.0.0.
 Changes are backward compatible by default. Renaming or removing anything below is a
 breaking change and needs a new version (Tier 3).
 
@@ -100,6 +102,18 @@ counters reset, the state goes to `loading`, and the map is shown again.
   the browser's default Referer policy.
 - Terms: https://operations.osmfoundation.org/policies/tiles/ (attribution, no bulk or
   prefetch, valid Referer).
+
+## 4a. Composition and CSP (ADR 0001 item 8, ADR 0004)
+
+- `src/js/app.js`:
+  `const locationMap = createLocationMap(document.querySelector('[data-testid="map-section"]'));`
+  then `locationMap` is appended to `consumers`. The map is not added to `onDenied` or
+  `onUnavailable`: it stays `hidden` until a position or a chosen place arrives.
+- `src/index.html` links `vendor/leaflet/leaflet.css` and `css/location-map.css`
+  (relative URLs). The map section has no `style=` attribute.
+- The CSP `img-src` becomes `'self' https://tile.openstreetmap.org`. Every other directive
+  stays as ADR 0004 sets it (plus the hosts other stories add). The CSP Node test compares
+  every directive's exact value.
 
 ## 5. Test hooks
 
