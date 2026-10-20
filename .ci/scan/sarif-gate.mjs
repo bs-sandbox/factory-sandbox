@@ -91,7 +91,7 @@ export function evaluate(sarifDir, allowlistPath, now = new Date()) {
     if (!doc || !Array.isArray(doc.runs) || doc.runs.length === 0) return fail(`parse: ${f} has zero runs`);
     for (const run of doc.runs) {
       const lang = languageOf(run);
-      runDescriptions.push(`id=${run?.automationDetails?.id ?? 'none'} driver=${run?.tool?.driver?.name ?? 'none'} results=${Array.isArray(run?.results) ? run.results.length : 'n/a'}`);
+      runDescriptions.push(`file=${f} props=${JSON.stringify(Object.keys(run?.properties ?? {}))} lang=${JSON.stringify(run?.properties?.languages ?? run?.tool?.driver?.properties ?? null).slice(0, 200)} id=${run?.automationDetails?.id ?? 'none'} driver=${run?.tool?.driver?.name ?? 'none'} results=${Array.isArray(run?.results) ? run.results.length : 'n/a'}`);
       if (lang) seen.add(lang);
       if (run.results !== undefined && !Array.isArray(run.results)) return fail(`parse: results is not an array in ${f}`);
       for (const res of run.results ?? []) {
