@@ -5,7 +5,8 @@
 # this check. It also runs on merge_group: the merge queue tests a temporary
 # merge commit, and a required check that never reports there stalls the queue.
 #
-# The contract every change must keep (the Architect designs to it):
+# The contract every change must keep (the Architect designs to it), plus QA's
+# acceptance tests in tests/acceptance/ (their own package; run when present):
 #   npm ci          installs exactly what package-lock.json pins
 #   npm test        runs the tests (node --test unless the design changes it)
 #   npm run build   writes the static site to dist/, with dist/index.html
@@ -42,3 +43,12 @@ jobs:
       - run: npm run build
       - name: The build produced the site
         run: test -s dist/index.html || { echo "npm run build must write dist/index.html"; exit 1; }
+      # QA's acceptance tests (2026-10-20: CI never ran them, so QA had no CI run
+      # to cite as Test Evidence). Their own package: Playwright and its Chromium.
+      - name: Acceptance tests
+        if: hashFiles('tests/acceptance/package-lock.json') != ''
+        working-directory: tests/acceptance
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+          npx playwright test
