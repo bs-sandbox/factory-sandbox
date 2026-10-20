@@ -83,6 +83,7 @@ export function evaluate(sarifDir, allowlistPath, now = new Date()) {
   if (files.length === 0) return fail('no sarif: no *.sarif file found');
 
   const seen = new Set();
+  const runDescriptions = [];
   let blocking = 0;
   for (const f of files) {
     let doc;
@@ -90,6 +91,7 @@ export function evaluate(sarifDir, allowlistPath, now = new Date()) {
     if (!doc || !Array.isArray(doc.runs) || doc.runs.length === 0) return fail(`parse: ${f} has zero runs`);
     for (const run of doc.runs) {
       const lang = languageOf(run);
+      runDescriptions.push(`id=${run?.automationDetails?.id ?? 'none'} driver=${run?.tool?.driver?.name ?? 'none'} results=${Array.isArray(run?.results) ? run.results.length : 'n/a'}`);
       if (lang) seen.add(lang);
       if (run.results !== undefined && !Array.isArray(run.results)) return fail(`parse: results is not an array in ${f}`);
       for (const res of run.results ?? []) {
@@ -114,7 +116,7 @@ export function evaluate(sarifDir, allowlistPath, now = new Date()) {
     }
   }
   for (const l of REQUIRED_LANGUAGES) {
-    if (!seen.has(l)) return fail(`language ${l} has no run in the SARIF`);
+    if (!seen.has(l)) return fail(`language ${l} has no run in the SARIF (runs: ${runDescriptions.join(' | ')})`);
   }
   if (blocking > 0) { lines.push(`::error title=sarif-gate::${blocking} blocking result(s)`); return { exitCode: 1, lines }; }
   return { exitCode: 0, lines };
