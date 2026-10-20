@@ -32,12 +32,21 @@ export function loadAllowlist(path, now = new Date()) {
   return { active, warnings };
 }
 
-export function languageOf(run) {
+// Real CodeQL v4.39.0 SARIF (observed in the first sast run on PR #14): the files written to the
+// analyze output directory are `<language>.sarif` (javascript.sarif, actions.sarif) and the runs
+// carry NO automationDetails.id (the upload step adds the category later). The language is
+// therefore taken from automationDetails.id `/language:<lang>` when present, otherwise from the
+// file name. `javascript` and `javascript-typescript` are the same language.
+export function languageOf(run, file) {
+  let lang = null;
   const id = run?.automationDetails?.id;
-  if (typeof id !== 'string') return null;
-  const m = id.match(/\/language:([^/\s]+)/);
-  if (!m) return null;
-  return m[1] === 'javascript' ? 'javascript-typescript' : m[1];
+  if (typeof id === 'string') {
+    const m = id.match(/\/language:([^/\s]+)/);
+    if (m) lang = m[1];
+  }
+  if (!lang && typeof file === 'string' && file.endsWith('.sarif')) lang = file.slice(0, -'.sarif'.length);
+  if (!lang) return null;
+  return lang === 'javascript' ? 'javascript-typescript' : lang;
 }
 
 const rulesOf = (component) => (Array.isArray(component?.rules) ? component.rules : []);
@@ -90,8 +99,8 @@ export function evaluate(sarifDir, allowlistPath, now = new Date()) {
     try { doc = JSON.parse(readFileSync(join(sarifDir, f), 'utf8')); } catch (e) { return fail(`parse error in ${f}: ${e.message}`); }
     if (!doc || !Array.isArray(doc.runs) || doc.runs.length === 0) return fail(`parse: ${f} has zero runs`);
     for (const run of doc.runs) {
-      const lang = languageOf(run);
-      runDescriptions.push(`file=${f} props=${JSON.stringify(Object.keys(run?.properties ?? {}))} lang=${JSON.stringify(run?.properties?.languages ?? run?.tool?.driver?.properties ?? null).slice(0, 200)} id=${run?.automationDetails?.id ?? 'none'} driver=${run?.tool?.driver?.name ?? 'none'} results=${Array.isArray(run?.results) ? run.results.length : 'n/a'}`);
+      const lang = languageOf(run, f);
+      runDescriptions.push(`file=${f} id=${run?.automationDetails?.id ?? 'none'} results=${Array.isArray(run?.results) ? run.results.length : 'n/a'}`);
       if (lang) seen.add(lang);
       if (run.results !== undefined && !Array.isArray(run.results)) return fail(`parse: results is not an array in ${f}`);
       for (const res of run.results ?? []) {

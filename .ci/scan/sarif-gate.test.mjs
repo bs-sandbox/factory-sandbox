@@ -10,8 +10,8 @@ import { evaluate } from './sarif-gate.mjs';
 const GATE = fileURLToPath(new URL('./sarif-gate.mjs', import.meta.url));
 const NOW = new Date('2026-10-20T00:00:00Z');
 
-// Fixture shape follows CodeQL SARIF: runs[].automationDetails.id contains "/language:<lang>/".
-// Unverified until the first real SARIF (ADR 0006 decision 4); update fixtures from it.
+// Real CodeQL v4.39.0 shape (PR #14 first run): files javascript.sarif and actions.sarif, runs without
+// automationDetails.id. Fixtures below also cover the id form (/language:<lang>/).
 const rule = (id, sev) => ({ id, properties: sev === undefined ? {} : { 'security-severity': sev } });
 const run = (lang, rules = [], results = []) => ({
   automationDetails: { id: `.github/workflows/security-scan.yml:sast/language:${lang}/` },
@@ -128,4 +128,22 @@ test('CLI exits non-zero with no sarif', () => {
 test('CLI exits zero on clean SARIF', () => {
   const s = setup(clean());
   assert.equal(spawnSync(process.execPath, [GATE, s.d, s.a]).status, 0);
+});
+
+function setupFiles(files) {
+  const d = mkdtempSync(join(tmpdir(), 'gate-'));
+  for (const [name, runs] of Object.entries(files)) writeFileSync(join(d, name), JSON.stringify({ version: '2.1.0', runs }));
+  const a = join(d, 'allow.json');
+  writeFileSync(a, '[]');
+  return { d, a };
+}
+const bare = () => ({ tool: { driver: { name: 'CodeQL', rules: [] } }, results: [] });
+test('language taken from file name when runs have no automationDetails (real CodeQL shape)', () => {
+  assert.equal(ev(setupFiles({ 'javascript.sarif': [bare()], 'actions.sarif': [bare()] })).exitCode, 0);
+});
+test('language: file name actions only is missing javascript-typescript', () => {
+  assert.equal(ev(setupFiles({ 'actions.sarif': [bare()] })).exitCode, 1);
+});
+test('language: unrelated file names do not satisfy the languages', () => {
+  assert.equal(ev(setupFiles({ 'python.sarif': [bare()], 'ruby.sarif': [bare()] })).exitCode, 1);
 });
