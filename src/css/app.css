@@ -1,0 +1,5 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 40rem; margin: 0 auto; padding: 1rem; }
+button { min-height: 44px; min-width: 44px; }
+[hidden] { display: none !important; }

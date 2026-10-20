@@ -2,13 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://api.open-meteo.com; base-uri 'none'; form-action 'none'; object-src 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Weather</title>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/current-conditions.css">
+  <script type="module" src="js/app.js"></script>
 </head>
 <body>
   <main>
     <h1>Weather</h1>
-    <p>Coming soon: built by the LIVTECH Factory.</p>
+    <section data-testid="conditions-section" aria-labelledby="conditions-heading">
+      <h2 id="conditions-heading">Current conditions</h2>
+      <p data-testid="conditions-status" role="status" aria-live="polite">Finding your location…</p>
+      <div data-testid="conditions-current" hidden>
+        <p data-testid="conditions-temperature"></p>
+        <p data-testid="conditions-text"></p>
+      </div>
+      <div data-testid="conditions-unavailable" hidden>
+        <p>Weather is unavailable right now.</p>
+        <button type="button" data-testid="conditions-retry">Try again</button>
+      </div>
+      <p data-testid="conditions-attribution" hidden>Weather data by
+        <a href="https://open-meteo.com/" rel="noopener noreferrer" target="_blank">Open-Meteo.com</a></p>
+    </section>
   </main>
 </body>
 </html>
