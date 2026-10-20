@@ -1,0 +1,55 @@
+# Publishes the site to GitHub Pages after every merge to main:
+# https://bs-sandbox.github.io/factory-sandbox/
+#
+# Merges reach main only through the merge queue, so what deploys here has
+# passed ci.yml on the merged commit. The build repeats the tests anyway: a
+# deploy must never publish a commit whose tests fail.
+#
+# DevOps records the run and the live check in the Deployment Record. Repo
+# settings: Settings -> Pages -> Source: GitHub Actions.
+#
+# Actions are GitHub's own, pinned to the commit of the release named beside
+# each (looked up 2026-10-20). Update the SHA and the comment together.
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+# One deployment at a time; a newer merge waits rather than cancelling one in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only this job can publish.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
