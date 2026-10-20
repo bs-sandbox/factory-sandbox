@@ -1,0 +1,20 @@
+# The factory needs CI green on a PR's head commit before Code Review (policy
+# guard ci_green; "no checks" counts as not green), and the ruleset requires
+# the "ci" check. It must also run on merge_group: the merge queue tests a
+# temporary commit, and a required check that never reports there stalls the queue.
+#
+# Placeholder until the product has tests: replace the step with the real
+# build and test commands. Uses no third-party actions.
+name: ci
+on:
+  pull_request:
+  merge_group:
+permissions:
+  contents: read
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder until the product has tests
+        run: echo "No tests configured yet for ${{ github.repository }} at ${{ github.sha }}"
