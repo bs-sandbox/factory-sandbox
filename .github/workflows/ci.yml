@@ -1,20 +1,44 @@
+# CI for bs-sandbox/factory-sandbox: the required "ci" check.
+#
 # The factory needs CI green on a PR's head commit before Code Review (policy
 # guard ci_green; "no checks" counts as not green), and the ruleset requires
-# the "ci" check. It must also run on merge_group: the merge queue tests a
-# temporary commit, and a required check that never reports there stalls the queue.
+# this check. It also runs on merge_group: the merge queue tests a temporary
+# merge commit, and a required check that never reports there stalls the queue.
 #
-# Placeholder until the product has tests: replace the step with the real
-# build and test commands. Uses no third-party actions.
+# The contract every change must keep (the Architect designs to it):
+#   npm ci          installs exactly what package-lock.json pins
+#   npm test        runs the tests (node --test unless the design changes it)
+#   npm run build   writes the static site to dist/, with dist/index.html
+# pages.yml publishes the same dist/ to GitHub Pages after a merge.
+#
+# Actions are GitHub's own, pinned to the commit of the release named beside
+# each (looked up 2026-10-20). Update the SHA and the comment together.
 name: ci
 on:
   pull_request:
   merge_group:
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   ci:
     name: ci
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Placeholder until the product has tests
-        run: echo "No tests configured yet for ${{ github.repository }} at ${{ github.sha }}"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      # Install scripts don't run: dependencies are code an agent chose.
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=high
+      - run: npm test
+      - run: npm run build
+      - name: The build produced the site
+        run: test -s dist/index.html || { echo "npm run build must write dist/index.html"; exit 1; }
