@@ -4,7 +4,7 @@
 # Hardening (THREAT-MODEL LIV-34 10304 / LIV-39 10335):
 #   - triggers: pull_request and merge_group only
 #   - no repository secrets; no artifacts; no Gitleaks SARIF upload
-#   - no continue-on-error, no job-level `if:`
+#   - no step-level error suppression, no job-level conditions
 #   - `${{ }}` reaches run: blocks only through env:, and only as SHAs or numbers
 #   - no other workflow may define a job id or name `sast` or `secret-scan`
 name: security-scan
