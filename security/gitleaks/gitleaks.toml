@@ -1,0 +1,4 @@
+# Gitleaks config for security-scan.yml (LIV-34, ADR 0006).
+# Default rules plus Security's allowlist (empty at first).
+[extend]
+useDefault = true

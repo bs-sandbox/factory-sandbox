@@ -1,0 +1,170 @@
+# PR security scans: `sast` (CodeQL + SARIF gate) and `secret-scan` (Gitleaks). LIV-34, ADR 0006,
+# contracts/ci/security-scans.md. The job names ARE the required check names.
+#
+# Hardening (THREAT-MODEL LIV-34 10304 / LIV-39 10335):
+#   - triggers: pull_request and merge_group only
+#   - no repository secrets; no artifacts; no Gitleaks SARIF upload
+#   - no continue-on-error, no job-level `if:`
+#   - `${{ }}` reaches run: blocks only through env:, and only as SHAs or numbers
+#   - no other workflow may define a job id or name `sast` or `secret-scan`
+name: security-scan
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+# Merge-group runs are never cancelled; their group key is the unique merge-group ref.
+concurrency:
+  group: security-scan-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  sast:
+    name: sast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: javascript-typescript,actions
+          build-mode: none
+          queries: security-extended
+          config-file: ./security/codeql/codeql-config.yml
+
+      - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          upload: always
+          output: ${{ runner.temp }}/sarif
+          sha: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.number && format('refs/pull/{0}/head', github.event.pull_request.number) || github.ref }}
+
+      - name: Gate unit tests
+        run: node --test .ci/scan/sarif-gate.test.mjs
+
+      - name: SARIF gate
+        env:
+          SARIF_DIR: ${{ runner.temp }}/sarif
+        run: node .ci/scan/sarif-gate.mjs "$SARIF_DIR" security/sast-allowlist.json
+
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Gitleaks v8.30.1, looked up 2026-10-20. The SHA-256 is a literal, recomputed from the
+      # release tarball; it is never fetched at run time. Bump version and hash together.
+      - name: Install Gitleaks (checksum pinned)
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          DEST: ${{ runner.temp }}/gitleaks-bin
+        run: |
+          set -euo pipefail
+          mkdir -p "$DEST"
+          curl -sSfL --retry 3 -o "$DEST/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $DEST/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$DEST/gitleaks.tar.gz" -C "$DEST" gitleaks
+
+      - name: Compute and assert scan range
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_COMMITS: ${{ github.event.pull_request.commits }}
+          MG_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            MB="$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")"
+            RANGE="${MB}..${PR_HEAD_SHA}"
+            EXPECTED="$PR_COMMITS"
+            ACTUAL="$(git rev-list --count "$RANGE")"
+            if [ "$ACTUAL" != "$EXPECTED" ]; then
+              echo "::error title=secret-scan range::${EXPECTED} vs ${ACTUAL}"
+              exit 1
+            fi
+          elif [ "$EVENT_NAME" = "merge_group" ]; then
+            RANGE="${MG_BASE_SHA}..${MG_HEAD_SHA}"
+            ACTUAL="$(git rev-list --count "$RANGE")"
+            if [ "$ACTUAL" -lt 1 ]; then
+              echo "::error title=secret-scan range::>=1 vs ${ACTUAL}"
+              exit 1
+            fi
+          else
+            echo "::error title=secret-scan range::unsupported event"
+            exit 1
+          fi
+          echo "SCAN_RANGE=${RANGE}" >> "$GITHUB_ENV"
+
+      - name: Gitleaks scan
+        env:
+          GL_BIN: ${{ runner.temp }}/gitleaks-bin/gitleaks
+          REPORT: ${{ runner.temp }}/gitleaks.json
+        run: |
+          set -uo pipefail
+          # A root .gitleaksignore is always loaded by Gitleaks; suppressions are honoured only
+          # under security/ (git history is unchanged).
+          rm -f -- .gitleaksignore
+          rm -f -- "$REPORT"
+          "$GL_BIN" git \
+            --log-opts="-m ${SCAN_RANGE}" \
+            --config security/gitleaks/gitleaks.toml \
+            --gitleaks-ignore-path security/gitleaks/.gitleaksignore \
+            --ignore-gitleaks-allow \
+            --redact \
+            --report-format json \
+            --report-path "$REPORT" \
+            --exit-code 1 \
+            --no-banner
+          RC=$?
+          echo "GITLEAKS_RC=${RC}" >> "$GITHUB_ENV"
+          # The verdict is decided in the next step; success needs exit 0 AND an empty report.
+          exit 0
+
+      - name: Verdict and annotations
+        if: always()
+        env:
+          REPORT: ${{ runner.temp }}/gitleaks.json
+        run: |
+          node --input-type=module -e '
+            import { readFileSync, existsSync } from "node:fs";
+            const rc = process.env.GITLEAKS_RC;
+            const esc = (s) => String(s).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+            const prop = (s) => esc(s).replace(/:/g, "%3A").replace(/,/g, "%2C");
+            if (rc === undefined) { console.log("::error title=secret-scan::scan did not run"); process.exit(1); }
+            if (!existsSync(process.env.REPORT)) { console.log("::error title=secret-scan::no report"); process.exit(1); }
+            let rep;
+            try { rep = JSON.parse(readFileSync(process.env.REPORT, "utf8")); }
+            catch { console.log("::error title=secret-scan::report does not parse"); process.exit(1); }
+            if (!Array.isArray(rep)) { console.log("::error title=secret-scan::report is not an array"); process.exit(1); }
+            // Only File, StartLine, RuleID and Commit are read; never Secret, Match, Line, Email, Author or Fingerprint.
+            for (const f of rep) {
+              console.log(`::error file=${prop(f.File)},line=${prop(f.StartLine)},title=${prop("gitleaks " + f.RuleID)}::commit ${esc(String(f.Commit).slice(0, 7))}`);
+            }
+            if (rep.length > 0) process.exit(1);
+            if (rc !== "0") { console.log(`::error title=secret-scan::gitleaks exit code ${prop(rc)}`); process.exit(1); }
+          '

@@ -1,0 +1,4 @@
+# CodeQL configuration for security-scan.yml (LIV-34, ADR 0006).
+# Suppressions live only under /security/** (Security + Security Owner approval).
+# Starts with no query-filters and no paths-ignore.
+name: factory-sandbox codeql config
