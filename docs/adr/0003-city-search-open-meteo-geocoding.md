@@ -38,6 +38,10 @@ Decision:
    - An entry is dropped unless it has a non-empty string `name`, a finite `latitude` in
      [-90, 90] and a finite `longitude` in [-180, 180]. `admin1` and `country` are optional
      strings and are left out of the label when absent.
+   - Text fields have C0/C1 and bidi control characters removed, are trimmed, and are capped
+     at 200 characters. Coordinates must be real numbers; strings aren't coerced. Each kept
+     entry is copied field by field into a new object, so nothing else from the raw entry
+     gets through (THREAT-MODEL T2, LIV-14 comment 10101).
    - If `results` is non-empty but every entry is dropped, the service is treated as unavailable.
 4. Only the latest search counts. A new submit aborts the request in flight, and a response
    from a superseded request is discarded.
@@ -45,9 +49,15 @@ Decision:
    - The form submit is cancelled (`preventDefault`), so the query never reaches the page
      URL or session history.
    - The input has `autocomplete="off"`, so the browser's form history doesn't keep it.
+   - The input has no `name` attribute and the section is shown only by script, so a native
+     submit can't carry the query. The geocoder origin is a hard-coded `https` constant that
+     nothing can override.
+   - The LIV-13 CSP (ADR 0004) gets `https://geocoding-api.open-meteo.com` added to `connect-src`.
    - Nothing goes to cookies, Web Storage or IndexedDB, and the query and coordinates are
      never logged (`console` included).
-6. All service text and user text is rendered with `textContent` only, never `innerHTML`.
+6. All service text and user text is rendered with `textContent` only. No HTML-parsing sink
+   (`innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`, `DOMParser`,
+   `createContextualFragment`) is used in the city-search modules (THREAT-MODEL T1).
 7. When the user selects a match, the module calls the injected `onPlaceSelected({ name, region,
    country, latitude, longitude })`. The page shell (LIV-13) passes the latitude and longitude
    on to every location consumer's `setLocation(lat, lon)`, following ADR 0001: current
