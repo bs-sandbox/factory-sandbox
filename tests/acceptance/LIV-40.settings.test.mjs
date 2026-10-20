@@ -91,13 +91,13 @@ test('R6 push-protection bypass restricted to Security Owner or recorded unavail
   assert.equal(status, 200);
   const sa = body.security_and_analysis ?? {};
   assert.equal(sa.secret_scanning_push_protection?.status, 'enabled');
-  const owner = process.env.SECURITY_OWNER_LOGIN;
   const mode = sa.secret_scanning_delegated_bypass?.status;
   if (mode === 'enabled') {
-    assert.ok(owner, 'SECURITY_OWNER_LOGIN must be set');
-    const opts = sa.secret_scanning_delegated_bypass_options?.reviewers ?? [];
-    assert.equal(opts.length, 1);
-    assert.equal(opts[0].reviewer_type === 'TEAM' ? opts[0].reviewer_id : owner, owner === undefined ? null : opts[0].reviewer_type === 'TEAM' ? opts[0].reviewer_id : owner);
+    const ownerId = process.env.SECURITY_OWNER_REVIEWER_ID;
+    assert.ok(ownerId, 'SECURITY_OWNER_REVIEWER_ID must be set (id of the human Security Owner or their single-member team)');
+    const reviewers = sa.secret_scanning_delegated_bypass_options?.reviewers ?? [];
+    assert.equal(reviewers.length, 1, 'exactly one bypass reviewer');
+    assert.equal(String(reviewers[0].reviewer_id), String(ownerId));
   } else {
     // Unavailable branch: requires evidence cited by the DevOps record, not satisfiable by API silence alone.
     assert.ok(process.env.R6_UNAVAILABLE_EVIDENCE_URL?.startsWith('https://'), 'delegated bypass not enabled: R6_UNAVAILABLE_EVIDENCE_URL must cite the API response or settings page');
