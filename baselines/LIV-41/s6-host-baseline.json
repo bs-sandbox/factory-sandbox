@@ -1,0 +1,11 @@
+{
+  "issue": "LIV-41",
+  "item": "LIV-43",
+  "source": "main @ b24e66e (pre-change, no footer)",
+  "method": "static scan of committed text files for http(s) and protocol-relative URLs; scripts/build.mjs copies src/ to dist/ unchanged",
+  "runtime_capture": "not performed: the sandbox has no browser runner; no runtime network log exists for this baseline",
+  "files_scanned": ["package.json","scripts/build.mjs","src/index.html","test/build.test.mjs"],
+  "external_hosts_requested_by_page": [],
+  "external_hosts_referenced_in_files": [],
+  "note": "external_hosts_referenced_in_files is the set of hosts found anywhere in the scanned files; it is empty on main. Whether <a href> navigation links count against S6 is a rule for QA/PM to decide, not for this baseline."
+}
