@@ -13,13 +13,13 @@ test("CSP meta is pinned exactly and is the first element after charset", () => 
   const charset = html.indexOf('<meta charset="utf-8">');
   const csp = html.indexOf("http-equiv=\"Content-Security-Policy\"");
   assert.ok(charset >= 0 && csp > charset);
-  assert.equal(html.slice(charset).match(/<(meta|link|script)\b[^>]*>/g)[1].includes("Content-Security-Policy"), true);
-  const firstLinkOrScript = html.search(/<(link|script)\b/);
+  assert.equal(html.slice(charset).match(/<(meta|link|script)\b[^>]*>/gi)[1].includes("Content-Security-Policy"), true);
+  const firstLinkOrScript = html.search(/<(link|script)\b/i);
   assert.ok(csp < firstLinkOrScript);
 });
 
 test("no inline script, style element, style attribute or on* handler", () => {
-  for (const s of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+  for (const s of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script[^>]*>/gi)) {
     assert.match(s[1], /\bsrc="/);
     assert.equal(s[2].trim(), "");
   }
