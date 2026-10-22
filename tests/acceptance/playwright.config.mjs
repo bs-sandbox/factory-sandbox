@@ -1,12 +1,29 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
-const external = process.env.BASE_URL; // preview URL during QA; otherwise serve src/ locally
+const port = Number(process.env.PORT ?? 4173);
+
 export default defineConfig({
   testDir: ".",
   testMatch: /.*\.spec\.mjs/,
-  retries: 0, // never retry until green
   fullyParallel: true,
-  reporter: [["list"], ["json", { outputFile: "results.json" }]],
-  use: { baseURL: external || "http://127.0.0.1:4173/", browserName: "chromium" },
-  webServer: external ? undefined : { command: "node serve.mjs", url: "http://127.0.0.1:4173/", reuseExistingServer: false },
+  // No retries: a test that passes only on a retry is not a pass (charter P6).
+  retries: 0,
+  forbidOnly: !!process.env.CI,
+  reporter: [["list"], ["html", { open: "never" }]],
+  use: {
+    baseURL: `http://127.0.0.1:${port}`,
+    trace: "retain-on-failure",
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
+  webServer: {
+    command: "node serve-dist.mjs",
+    url: `http://127.0.0.1:${port}/`,
+    reuseExistingServer: !process.env.CI,
+    timeout: 30_000,
+  },
 });
