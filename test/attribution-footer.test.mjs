@@ -13,8 +13,17 @@ const footerInner = footers.length === 1 ? footers[0][1] : null;
 
 // Visible text of an HTML fragment, with the two entities the contract uses decoded.
 function textOf(fragment) {
-  return fragment
-    .replace(/<[^>]*>/g, "")
+  // Remove tags repeatedly until none are left, so nested fragments such as
+  // "<<b>script>" cannot reassemble a tag after one pass (CodeQL
+  // js/incomplete-multi-character-sanitization). The result must hold no "<" or ">".
+  let text = fragment;
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/<[^<>]*>/g, "");
+  } while (text !== previous);
+  assert.ok(!/[<>]/.test(text), "unexpected markup left in footer text");
+  return text
     .replace(/&middot;/g, "·")
     .replace(/&copy;/g, "©");
 }
