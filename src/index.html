@@ -7,6 +7,7 @@
   <title>Weather</title>
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/current-conditions.css">
+  <link rel="stylesheet" href="css/daily-outlook.css">
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
@@ -24,6 +25,17 @@
         <button type="button" data-testid="conditions-retry">Try again</button>
       </div>
       <p data-testid="conditions-attribution" hidden>Weather data by
+        <a href="https://open-meteo.com/" rel="noopener noreferrer" target="_blank">Open-Meteo.com</a></p>
+    </section>
+    <section data-testid="outlook-section" aria-labelledby="outlook-heading" hidden>
+      <h2 id="outlook-heading">10-day outlook</h2>
+      <p data-testid="outlook-loading" role="status" hidden>Loading outlook…</p>
+      <ol data-testid="outlook-list" hidden></ol>
+      <div data-testid="outlook-unavailable" role="status" hidden>
+        <p>Outlook is unavailable right now.</p>
+        <button type="button" data-testid="outlook-retry">Try again</button>
+      </div>
+      <p data-testid="outlook-attribution">Weather data by
         <a href="https://open-meteo.com/" rel="noopener noreferrer" target="_blank">Open-Meteo.com</a></p>
     </section>
   </main>
