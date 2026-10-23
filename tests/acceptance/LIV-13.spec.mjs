@@ -25,6 +25,11 @@ async function setup(browser, { geo = "grant", weather = ok(), viewport, pos = P
   page.on("pageerror", (e) => log.pageErrors.push(String(e)));
   await page.route(API, async (route) => {
     const req = route.request();
+    if (new URL(req.url()).searchParams.has("daily")) {
+      // LIV-15 outlook request: not a current-conditions request; answer with a synthetic valid forecast.
+      const days = Array.from({ length: 10 }, (_, i) => `2026-10-${String(20 + i).padStart(2, "0")}`);
+      return route.fulfill(json(200, { daily: { time: days, weather_code: days.map(() => 2), temperature_2m_max: days.map(() => 15), temperature_2m_min: days.map(() => 8), precipitation_probability_max: days.map(() => 10) } }));
+    }
     log.weather.push({ url: req.url(), headers: await req.allHeaders() });
     const w = typeof weather === "function" ? weather(log.weather.length) : weather;
     if (w === "abort") return route.abort("failed");
@@ -58,7 +63,7 @@ async function setup(browser, { geo = "grant", weather = ok(), viewport, pos = P
 
 const temp = (p) => p.getByTestId("conditions-temperature");
 const text = (p) => p.getByTestId("conditions-text");
-const retryBtn = (p) => p.getByRole("button", { name: "Try again" });
+const retryBtn = (p) => p.getByTestId("conditions-section").getByRole("button", { name: "Try again" });
 const noConditions = async (p) => {
   await expect(p.getByTestId("conditions-current")).toBeHidden();
   await expect(temp(p)).toHaveText("");
@@ -126,7 +131,7 @@ test("S5 network error also shows message and Try again", async ({ browser }) =>
 test("S6 attribution visible without interaction when conditions are displayed", async ({ browser }) => {
   const { page, context } = await setup(browser);
   await expect(temp(page)).toHaveText("14°C");
-  const link = page.getByRole("link", { name: "Open-Meteo.com" });
+  const link = page.getByTestId("conditions-section").getByRole("link", { name: "Open-Meteo.com" });
   await expect(link).toBeVisible();
   await expect(link).toHaveAttribute("href", "https://open-meteo.com/");
   await context.close();
@@ -271,7 +276,7 @@ test("S18 CSP blocks unexpected hosts and inline script", async ({ browser }) =>
   expect(result.violations.some((v) => v.startsWith("script-src"))).toBe(true);
   expect(result.inline).toBe("not-run");
   expect(log.example).toEqual([]);
-  expect(log.requests.filter((r) => r.url.startsWith("https://example.com"))).toEqual([]);
+  expect(log.requests.filter((r) => new URL(r.url).hostname === "example.com")).toEqual([]);
   await context.close();
 });
 
@@ -299,7 +304,7 @@ for (const mode of ["success", "failure"]) {
     // Browser-generated "Failed to load resource" lines carry no URL in their text; we check the text.
     for (const line of log.console) {
       expect(line).not.toMatch(/47\.6|122\.3|-?\d{1,3}\.\d{2,}/);
-      expect(line).not.toMatch(/open-meteo\.com\/v1/);
+      expect(line.includes("open-meteo.com/v1")).toBe(false);
     }
     expect(log.pageErrors).toEqual([]);
     expect(page.url()).not.toMatch(/47\.6|122\.3|latitude|longitude/);

@@ -1,0 +1,8 @@
+[data-testid="outlook-section"] { margin-top: 1.5rem; }
+[data-testid="outlook-list"] { list-style: none; margin: 0; padding: 0; }
+[data-testid="outlook-day"] {
+  display: flex; flex-wrap: wrap; gap: 0.25rem 1rem;
+  padding: 0.5rem 0; border-bottom: 1px solid #ccc; overflow-wrap: anywhere;
+}
+[data-testid="outlook-day"] > * { min-width: 0; }
+[data-testid="outlook-date"] { font-weight: bold; flex: 1 1 100%; }

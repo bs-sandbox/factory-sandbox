@@ -20,6 +20,11 @@ test("S3 selecting the first entry shows temperature and conditions in the curre
   const weatherRequests = [];
   await page.route(GEO, (route) => { geoRequests.push(route.request().url()); return route.fulfill(json(SPRINGFIELD)); });
   await page.route(WEATHER, (route) => {
+    if (new URL(route.request().url()).searchParams.has("daily")) {
+      // LIV-15 outlook request: not a current-conditions request; answer with a synthetic valid forecast.
+      const days = Array.from({ length: 10 }, (_, i) => `2026-10-${String(20 + i).padStart(2, "0")}`);
+      return route.fulfill(json({ daily: { time: days, weather_code: days.map(() => 2), temperature_2m_max: days.map(() => 15), temperature_2m_min: days.map(() => 8), precipitation_probability_max: days.map(() => 10) } }));
+    }
     weatherRequests.push(route.request().url());
     return route.fulfill(json({ current: { temperature_2m: 21.4, weather_code: 3 } }));
   });
