@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "ruleId": "js/incomplete-url-substring-sanitization",
+    "path": "tests/acceptance/LIV-13.spec.mjs",
+    "startLine": 274,
+    "reason": "False positive. Test-only negative assertion (AC S18) that no recorded request URL starts with https://example.com. It sanitizes nothing and gates no access; a broader prefix match only makes the assertion stricter. Backed by the log.example assertion and CSP connect-src. Not shipped (build copies src/ only).",
+    "issue": "LIV-13",
+    "expires": "2027-01-22"
+  },
+  {
+    "ruleId": "js/regex/missing-regexp-anchor",
+    "path": "tests/acceptance/LIV-13.spec.mjs",
+    "startLine": 302,
+    "reason": "False positive. Test-only negative assertion (AC S20) that no console line contains the weather request URL. The regex is unanchored on purpose so it matches anywhere in the line; anchoring would weaken S20. Not used for URL validation. Not shipped (build copies src/ only).",
+    "issue": "LIV-13",
+    "expires": "2027-01-22"
+  }
+]
