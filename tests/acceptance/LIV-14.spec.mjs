@@ -35,7 +35,7 @@ test("S3 selecting the first entry shows temperature and conditions in the curre
 
   // Given the results list for "Springfield" is shown
   await expect(page.getByText("Location access was denied.")).toBeVisible();
-  await page.getByRole("textbox", { name: "City name" }).fill("Springfield");
+  await page.getByLabel("City name").fill("Springfield");
   await page.getByRole("button", { name: "Search" }).click();
   const results = page.getByTestId("city-search-result-button");
   await expect(results).toHaveCount(2);
