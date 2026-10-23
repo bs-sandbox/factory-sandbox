@@ -74,7 +74,7 @@ export async function openPage(t, { geolocation = SEATTLE, deny = false, tiles =
 export const place = (name, latitude, longitude) => ({ name, latitude, longitude, admin1: "X", country: "Y" });
 
 export async function searchAndPick(page, query) {
-  await page.getByRole("textbox", { name: "City name" }).fill(query);
+  await page.getByRole("searchbox", { name: "City name" }).fill(query);
   await page.getByRole("button", { name: "Search" }).click();
   await page.locator('[data-testid="city-search-result-button"]').first().click();
 }

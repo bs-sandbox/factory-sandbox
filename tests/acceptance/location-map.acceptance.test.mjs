@@ -125,7 +125,11 @@ test("S8_phone_360_layout", async (t) => {
   const sec = await page.locator('[data-testid="map-section"]').boundingBox();
   const sw = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
   assert.ok(sw.sw <= sw.cw, `horizontal scroll: ${JSON.stringify(sw)}`);
-  const content = await page.evaluate(() => (document.querySelector("main") ?? document.body).getBoundingClientRect().width);
+  const content = await page.evaluate(() => {
+    const el = document.querySelector("main") ?? document.body;
+    const cs = getComputedStyle(el);
+    return el.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+  });
   assert.ok(Math.abs(sec.width - content) <= 1, `map section ${sec.width} is not the content width ${content}`);
   for (const n of ["Zoom in", "Zoom out", "Recentre"]) {
     assert.equal(await page.getByRole("button", { name: n }).isVisible(), true, n);
