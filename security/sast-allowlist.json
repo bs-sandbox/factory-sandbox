@@ -17,7 +17,7 @@
   },
   {
     "ruleId": "js/incomplete-url-substring-sanitization",
-    "path": "tests/acceptance/location-map.acceptance.test.mjs",
+    "path": "tests/acceptance/location-map.spec.mjs",
     "startLine": 111,
     "reason": "False positive. Test-only filter in AC S7 that selects recorded requests whose URL contains tile.openstreetmap.org so the test can assert none carries raw coordinates. It sanitizes nothing and gates no access; a broader substring match selects more URLs and only makes the assertion stricter. Line 108 separately checks tile URLs by exact https prefix and TILE_RE. Not shipped (build copies src/ only).",
     "issue": "LIV-16",
