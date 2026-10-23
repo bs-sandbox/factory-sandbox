@@ -276,7 +276,7 @@ test("S18 CSP blocks unexpected hosts and inline script", async ({ browser }) =>
   expect(result.violations.some((v) => v.startsWith("script-src"))).toBe(true);
   expect(result.inline).toBe("not-run");
   expect(log.example).toEqual([]);
-  expect(log.requests.filter((r) => r.url.startsWith("https://example.com"))).toEqual([]);
+  expect(log.requests.filter((r) => new URL(r.url).hostname === "example.com")).toEqual([]);
   await context.close();
 });
 
