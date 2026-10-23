@@ -10,5 +10,8 @@
   "scripts": {
     "test": "node --test",
     "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "leaflet": "1.9.4"
   }
 }

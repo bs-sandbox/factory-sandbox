@@ -1,0 +1,6 @@
+[data-testid="map-section"] { width: 100%; }
+[data-testid="map"] { width: 100%; height: 300px; }
+[data-testid="map-recentre"] { display: block; background: #fff; border: 2px solid rgba(0, 0, 0, 0.2); border-radius: 4px; cursor: pointer; }
+@media (min-width: 600px) {
+  [data-testid="map"] { height: 400px; }
+}
