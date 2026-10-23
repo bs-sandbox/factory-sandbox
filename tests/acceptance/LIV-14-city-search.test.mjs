@@ -206,7 +206,14 @@ test("S13 missing region: 'Singapore, Singapore' with no empty part", async () =
 
 test("S14 attribution visible without interaction, with both links", () => {
   const attr = sectionHtml().match(/<p[^>]*city-search-attribution[\s\S]*?<\/p>/)?.[0] ?? "";
-  const text = attr.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  let plain = "";
+  let inTag = false;
+  for (const ch of attr) {
+    if (ch === "<") inTag = true;
+    else if (ch === ">") inTag = false;
+    else if (!inTag) plain += ch;
+  }
+  const text = plain.replace(/\s+/g, " ").trim();
   assert.equal(text, "Place search by Open-Meteo.com, data from GeoNames");
   assert.match(attr, /href="https:\/\/open-meteo\.com\/"/);
   assert.match(attr, /href="https:\/\/www\.geonames\.org\/"/);
