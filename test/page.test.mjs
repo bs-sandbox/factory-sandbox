@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 const html = readFileSync(new URL("../src/index.html", import.meta.url), "utf8");
 
-const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://api.open-meteo.com; base-uri 'none'; form-action 'none'; object-src 'none'";
+const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com; base-uri 'none'; form-action 'none'; object-src 'none'";
 
 test("CSP meta is pinned exactly and is the first element after charset", () => {
   const m = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)">/);
