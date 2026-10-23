@@ -1,0 +1,16 @@
+{
+  "name": "factory-sandbox-acceptance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "QA acceptance tests (Playwright) for the factory-sandbox weather app. Run by ci.yml.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

@@ -5,7 +5,8 @@
 # this check. It also runs on merge_group: the merge queue tests a temporary
 # merge commit, and a required check that never reports there stalls the queue.
 #
-# The contract every change must keep (the Architect designs to it):
+# The contract every change must keep (the Architect designs to it), plus QA's
+# acceptance tests in tests/acceptance/ (their own package; run when present):
 #   npm ci          installs exactly what package-lock.json pins
 #   npm test        runs the tests (node --test unless the design changes it)
 #   npm run build   writes the static site to dist/, with dist/index.html
@@ -42,3 +43,26 @@ jobs:
       - run: npm run build
       - name: The build produced the site
         run: test -s dist/index.html || { echo "npm run build must write dist/index.html"; exit 1; }
+      # QA's acceptance tests (2026-10-20: CI never ran them, so QA had no CI run
+      # to cite as Test Evidence). Their own package: Playwright and its Chromium.
+      - name: Acceptance tests - install dependencies
+        if: hashFiles('tests/acceptance/package-lock.json') != ''
+        working-directory: tests/acceptance
+        run: npm ci --ignore-scripts
+      # Browser only, no --with-deps: no apt, no Ubuntu mirror (LIV-44).
+      - name: Acceptance tests - Playwright browser cache
+        id: pw-cache
+        if: hashFiles('tests/acceptance/package-lock.json') != ''
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/acceptance/package-lock.json') }}
+      - name: Acceptance tests - install browser
+        if: hashFiles('tests/acceptance/package-lock.json') != ''
+        working-directory: tests/acceptance
+        timeout-minutes: 5
+        run: npx playwright install chromium
+      - name: Acceptance tests
+        if: hashFiles('tests/acceptance/package-lock.json') != ''
+        working-directory: tests/acceptance
+        run: npx playwright test
