@@ -8,8 +8,8 @@ const places = { portland: [PORTLAND], seattle: [place("Seattle", SEATTLE.latitu
 const map = (p) => p.locator('[data-testid="map"]');
 const near = (v, tol = 4) => Math.abs(v) <= tol;
 
-test("S1_map_centred_with_marker", async (t) => {
-  const { page, log } = await openPage(t);
+test("S1_map_centred_with_marker", async ({ browser, baseURL }) => {
+  const { page, log } = await openPage(browser, baseURL);
   await map(page).waitFor({ state: "visible" });
   await page.locator('[data-testid="map-marker"]').waitFor({ state: "visible" });
   await settle(page);
@@ -19,15 +19,15 @@ test("S1_map_centred_with_marker", async (t) => {
   assert.ok(log.tiles.some((x) => x.z === 15 && x.x === c.x && x.y === c.y), "centre tile for the position was not requested");
 });
 
-test("S1_street_names_visible_at_default_zoom_is_zoom_15", async (t) => {
+test("S1_street_names_visible_at_default_zoom_is_zoom_15", async ({ browser, baseURL }) => {
   // Street names come from the OSM style at z15 (DR1). Visual check on real tiles is an exploratory charter.
-  const { page, log } = await openPage(t);
+  const { page, log } = await openPage(browser, baseURL);
   await settle(page);
   assert.equal(maxZ(log.tiles), 15);
 });
 
-test("S2_pan_by_drag_changes_visible_area", async (t) => {
-  const { page } = await openPage(t);
+test("S2_pan_by_drag_changes_visible_area", async ({ browser, baseURL }) => {
+  const { page } = await openPage(browser, baseURL);
   await settle(page);
   const before = await markerOffsetFromCentre(page);
   await dragMap(page, 120, 60);
@@ -35,8 +35,8 @@ test("S2_pan_by_drag_changes_visible_area", async (t) => {
   assert.ok(Math.abs(after.dx - before.dx) > 50 && Math.abs(after.dy - before.dy) > 20, "visible area did not change after drag");
 });
 
-test("S2_zoom_in_and_out_controls", async (t) => {
-  const { page, log } = await openPage(t);
+test("S2_zoom_in_and_out_controls", async ({ browser, baseURL }) => {
+  const { page, log } = await openPage(browser, baseURL);
   await settle(page);
   const n0 = log.tiles.length;
   await page.getByRole("button", { name: "Zoom in" }).click();
@@ -49,8 +49,8 @@ test("S2_zoom_in_and_out_controls", async (t) => {
   assert.ok(log.tiles.slice(n1).some((x) => x.z === 14), "zoom-out did not request z14 tiles");
 });
 
-test("S3_recentre_after_pan_keeps_zoom", async (t) => {
-  const { page, log } = await openPage(t);
+test("S3_recentre_after_pan_keeps_zoom", async ({ browser, baseURL }) => {
+  const { page, log } = await openPage(browser, baseURL);
   await settle(page);
   await page.getByRole("button", { name: "Zoom in" }).click();
   await settle(page);
@@ -66,9 +66,9 @@ test("S3_recentre_after_pan_keeps_zoom", async (t) => {
   assert.ok(log.tiles.slice(n).every((x) => x.z === 16), "Recentre must keep zoom 16, not reset to 15");
 });
 
-test("S4_location_changes_via_city_search", async (t) => {
+test("S4_location_changes_via_city_search", async ({ browser, baseURL }) => {
   // City search is shown when geolocation is denied (LIV-14), so reach the map via search both times.
-  const { page, log } = await openPage(t, { deny: true, places });
+  const { page, log } = await openPage(browser, baseURL, { deny: true, places });
   await searchAndPick(page, "seattle");
   await map(page).waitFor({ state: "visible" });
   await settle(page);
@@ -81,16 +81,16 @@ test("S4_location_changes_via_city_search", async (t) => {
   assert.ok(log.tiles.slice(n).some((x) => x.z === 15 && x.x === c.x && x.y === c.y), "new place's centre tile not requested");
 });
 
-test("S5_attribution_visible_without_interaction", async (t) => {
-  const { page } = await openPage(t);
+test("S5_attribution_visible_without_interaction", async ({ browser, baseURL }) => {
+  const { page } = await openPage(browser, baseURL);
   const a = page.locator('[data-testid="map-attribution"]');
   await a.waitFor({ state: "visible" });
   assert.match(await a.innerText(), /© OpenStreetMap contributors/);
   assert.equal(await a.locator('a[href="https://www.openstreetmap.org/copyright"]').isVisible(), true);
 });
 
-test("S6_tile_service_failure_shows_message_and_keeps_conditions", async (t) => {
-  const { page } = await openPage(t, { tiles: "fail" });
+test("S6_tile_service_failure_shows_message_and_keeps_conditions", async ({ browser, baseURL }) => {
+  const { page } = await openPage(browser, baseURL, { tiles: "fail" });
   const m = page.locator('[data-testid="map-unavailable"]');
   await m.waitFor({ state: "visible", timeout: 20000 });
   assert.equal((await m.innerText()).trim(), "Map is unavailable right now.");
@@ -99,8 +99,8 @@ test("S6_tile_service_failure_shows_message_and_keeps_conditions", async (t) => 
   assert.equal(await page.locator('[data-testid="outlook-list"]').isVisible(), true);
 });
 
-test("S7_privacy_requests_and_storage", async (t) => {
-  const { page, context, log, origin } = await openPage(t);
+test("S7_privacy_requests_and_storage", async ({ browser, baseURL }) => {
+  const { page, context, log, origin } = await openPage(browser, baseURL);
   await settle(page);
   for (const r of log.requests) {
     const u = r.url;
@@ -118,8 +118,8 @@ test("S7_privacy_requests_and_storage", async (t) => {
   assert.deepEqual(s, { l: 0, s: 0, db: 0, cookie: "" });
 });
 
-test("S8_phone_360_layout", async (t) => {
-  const { page } = await openPage(t, { viewport: { width: 360, height: 640 }, hasTouch: true });
+test("S8_phone_360_layout", async ({ browser, baseURL }) => {
+  const { page } = await openPage(browser, baseURL, { viewport: { width: 360, height: 640 }, hasTouch: true });
   await map(page).waitFor({ state: "visible" });
   await settle(page);
   const sec = await page.locator('[data-testid="map-section"]').boundingBox();
@@ -141,16 +141,16 @@ test("S8_phone_360_layout", async (t) => {
   assert.ok((await page.evaluate(() => scrollY)) > y0, "page did not scroll past the map");
 });
 
-test("S9_default_zoom_on_first_display", async (t) => {
-  const { page, log } = await openPage(t);
+test("S9_default_zoom_on_first_display", async ({ browser, baseURL }) => {
+  const { page, log } = await openPage(browser, baseURL);
   await settle(page);
   assert.ok(log.tiles.length > 0);
   assert.equal(Math.min(...log.tiles.map((x) => x.z)), 15);
   assert.equal(maxZ(log.tiles), 15);
 });
 
-test("S10_default_zoom_after_place_change", async (t) => {
-  const { page, log } = await openPage(t, { deny: true, places });
+test("S10_default_zoom_after_place_change", async ({ browser, baseURL }) => {
+  const { page, log } = await openPage(browser, baseURL, { deny: true, places });
   await searchAndPick(page, "seattle");
   await settle(page);
   await page.getByRole("button", { name: "Zoom in" }).click();
@@ -166,8 +166,8 @@ test("S10_default_zoom_after_place_change", async (t) => {
   assert.ok(after.some((x) => x.x === c.x && x.y === c.y));
 });
 
-test("S11_coordinates_never_in_page_url", async (t) => {
-  const { page } = await openPage(t, { deny: true, places });
+test("S11_coordinates_never_in_page_url", async ({ browser, baseURL }) => {
+  const { page } = await openPage(browser, baseURL, { deny: true, places });
   const load = page.url();
   await searchAndPick(page, "seattle");
   await settle(page);
@@ -176,15 +176,15 @@ test("S11_coordinates_never_in_page_url", async (t) => {
   assert.equal(page.url(), load);
 });
 
-test("S11_url_unchanged_with_geolocation", async (t) => {
-  const { page } = await openPage(t);
+test("S11_url_unchanged_with_geolocation", async ({ browser, baseURL }) => {
+  const { page } = await openPage(browser, baseURL);
   const load = page.url();
   await settle(page);
   assert.equal(page.url(), load);
 });
 
-test("S12_csp_img_src_exact_and_image_hosts", async (t) => {
-  const { page, origin } = await openPage(t);
+test("S12_csp_img_src_exact_and_image_hosts", async ({ browser, baseURL }) => {
+  const { page, origin } = await openPage(browser, baseURL);
   await settle(page);
   const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute("content");
   const dirs = Object.fromEntries(csp.split(";").map((d) => d.trim()).filter(Boolean).map((d) => {
@@ -205,9 +205,9 @@ test("S12_csp_img_src_exact_and_image_hosts", async (t) => {
   }
 });
 
-test("S13_tile_requests_no_cookie_and_origin_only_referer", async (t) => {
+test("S13_tile_requests_no_cookie_and_origin_only_referer", async ({ browser, baseURL }) => {
   const cookies = [{ name: "probe", value: "1", domain: "tile.openstreetmap.org", path: "/", secure: true, sameSite: "None" }];
-  const { page, log, origin } = await openPage(t, { cookies });
+  const { page, log, origin } = await openPage(browser, baseURL, { cookies });
   await settle(page);
   assert.ok(log.tiles.length > 0);
   for (const r of log.tiles) {
@@ -216,14 +216,14 @@ test("S13_tile_requests_no_cookie_and_origin_only_referer", async (t) => {
   }
 });
 
-test("S14_invalid_coordinates_ignored", async (t) => {
+test("S14_invalid_coordinates_ignored", async ({ browser, baseURL }) => {
   const all = {
     seattle: places.seattle,
     badlat: [place("Bad lat", 91, 10)],
     badlon: [place("Bad lon", 10, -181)],
     badtype: [{ name: "Bad type", latitude: "abc", longitude: 10, admin1: "X", country: "Y" }],
   };
-  const { page, log } = await openPage(t, { deny: true, places: all });
+  const { page, log } = await openPage(browser, baseURL, { deny: true, places: all });
   await searchAndPick(page, "seattle");
   await settle(page);
   for (const q of ["badlat", "badlon", "badtype"]) {
