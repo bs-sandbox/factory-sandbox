@@ -1,47 +1,21 @@
 // Acceptance-test harness for LIV-16 (written from the AC and contracts only).
-// Requires: `playwright` (chromium) installed in the QA environment, and `npm run build` done (dist/).
-import { createServer } from "node:http";
-import { readFileSync, existsSync, statSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
-import { chromium } from "playwright";
 
 export const SEATTLE = { latitude: 47.6062, longitude: -122.3321 };
 export const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
 export const TILE_RE = /^https:\/\/tile\.openstreetmap\.org\/(\d+)\/(\d+)\/(\d+)\.png$/;
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".png": "image/png" };
-
-export function serveDist(dist = join(process.cwd(), "dist")) {
-  return new Promise((resolve) => {
-    const srv = createServer((req, res) => {
-      const p = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname)).replace(/^([/\\])+/, "");
-      let f = join(dist, p === "" ? "index.html" : p);
-      if (!f.startsWith(dist)) { res.writeHead(403); return res.end(); }
-      if (existsSync(f) && statSync(f).isDirectory()) f = join(f, "index.html");
-      if (!existsSync(f)) { res.writeHead(404); return res.end(); }
-      res.writeHead(200, { "content-type": TYPES[extname(f)] ?? "application/octet-stream" });
-      res.end(readFileSync(f));
-    });
-    srv.listen(0, "127.0.0.1", () => resolve({
-      origin: `http://127.0.0.1:${srv.address().port}`, close: () => srv.close(),
-    }));
-  });
-}
-
 const FORECAST = {
   current: { temperature_2m: 14.0, weather_code: 2 },
   daily: { time: ["2026-10-20"], temperature_2m_max: [18], temperature_2m_min: [9], weather_code: [61], precipitation_probability_max: [70] },
 };
 
 // Opens the page with stubbed external services. Records every request.
-export async function openPage(t, { geolocation = SEATTLE, deny = false, tiles = "ok", places = {}, viewport, hasTouch, cookies } = {}) {
-  const server = await serveDist();
-  const browser = await chromium.launch();
+export async function openPage(browser, baseURL, { geolocation = SEATTLE, deny = false, tiles = "ok", places = {}, viewport, hasTouch, cookies } = {}) {
   const context = await browser.newContext({
+    baseURL,
     viewport: viewport ?? { width: 1024, height: 800 }, hasTouch,
     permissions: deny ? [] : ["geolocation"], geolocation: deny ? undefined : geolocation,
   });
-  t.after(async () => { await browser.close(); server.close(); });
   if (cookies) await context.addCookies(cookies);
   const page = await context.newPage();
   const log = { tiles: [], requests: [], consoleText: [] };
@@ -67,8 +41,8 @@ export async function openPage(t, { geolocation = SEATTLE, deny = false, tiles =
       body: JSON.stringify(results.length ? { results } : {}),
     });
   });
-  await page.goto(server.origin + "/");
-  return { page, context, log, origin: server.origin };
+  await page.goto("/");
+  return { page, context, log, origin: new URL(baseURL).origin };
 }
 
 export const place = (name, latitude, longitude) => ({ name, latitude, longitude, admin1: "X", country: "Y" });
