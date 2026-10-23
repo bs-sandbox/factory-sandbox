@@ -14,5 +14,13 @@
     "reason": "False positive. Test-only negative assertion (AC S20) that no console line contains the weather request URL. The regex is unanchored on purpose so it matches anywhere in the line; anchoring would weaken S20. Not used for URL validation. Not shipped (build copies src/ only).",
     "issue": "LIV-13",
     "expires": "2027-01-22"
+  },
+  {
+    "ruleId": "js/incomplete-url-substring-sanitization",
+    "path": "tests/acceptance/location-map.acceptance.test.mjs",
+    "startLine": 111,
+    "reason": "False positive. Test-only filter in AC S7 that selects recorded requests whose URL contains tile.openstreetmap.org so the test can assert none carries raw coordinates. It sanitizes nothing and gates no access; a broader substring match selects more URLs and only makes the assertion stricter. Line 108 separately checks tile URLs by exact https prefix and TILE_RE. Not shipped (build copies src/ only).",
+    "issue": "LIV-16",
+    "expires": "2027-01-23"
   }
 ]
