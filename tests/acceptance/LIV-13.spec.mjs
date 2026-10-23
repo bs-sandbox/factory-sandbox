@@ -276,7 +276,7 @@ test("S18 CSP blocks unexpected hosts and inline script", async ({ browser }) =>
   expect(result.violations.some((v) => v.startsWith("script-src"))).toBe(true);
   expect(result.inline).toBe("not-run");
   expect(log.example).toEqual([]);
-  expect(log.requests.filter((r) => r.url.startsWith("https://example.com"))).toEqual([]);
+  expect(log.requests.filter((r) => new URL(r.url).hostname === "example.com")).toEqual([]);
   await context.close();
 });
 
@@ -304,7 +304,7 @@ for (const mode of ["success", "failure"]) {
     // Browser-generated "Failed to load resource" lines carry no URL in their text; we check the text.
     for (const line of log.console) {
       expect(line).not.toMatch(/47\.6|122\.3|-?\d{1,3}\.\d{2,}/);
-      expect(line).not.toMatch(/open-meteo\.com\/v1/);
+      expect(line.includes("open-meteo.com/v1")).toBe(false);
     }
     expect(log.pageErrors).toEqual([]);
     expect(page.url()).not.toMatch(/47\.6|122\.3|latitude|longitude/);
