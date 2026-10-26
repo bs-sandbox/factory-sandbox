@@ -1,6 +1,6 @@
 // LIV-16 acceptance tests. One or more tests per AC scenario; names carry the scenario ID.
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test, expect } from "@playwright/test";
+const assert = { ok: (v, m) => expect(v, m).toBeTruthy(), equal: (a, b, m) => expect(a, m).toBe(b), match: (a, r) => expect(a).toMatch(r), deepEqual: (a, b) => expect(a).toEqual(b) };
 import { openPage, place, searchAndPick, tileFor, settle, maxZ, markerOffsetFromCentre, dragMap, SEATTLE, TILE_RE } from "./helpers/harness.mjs";
 
 const PORTLAND = place("Portland", 45.5152, -122.6784);
