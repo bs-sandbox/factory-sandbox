@@ -2,12 +2,14 @@
 import { createCitySearch } from "./city-search.js";
 import { createCurrentConditions } from "./current-conditions.js";
 import { createDailyOutlook } from "./daily-outlook.js";
+import { createLocationMap } from "./location-map.js";
 import { requestLocation } from "./location-source.js";
 import { setLocationAll, startShell } from "./page-shell.js";
 
 const conditions = createCurrentConditions(document.querySelector('[data-testid="conditions-section"]'));
 const outlook = createDailyOutlook(document.querySelector('[data-testid="outlook-section"]'));
-const consumers = [conditions, outlook];
+const locationMap = createLocationMap(document.querySelector('[data-testid="map-section"]'));
+const consumers = [conditions, outlook, locationMap];
 const citySearch = createCitySearch({
   root: document.querySelector('[data-testid="city-search"]'),
   onPlaceSelected: (place) => setLocationAll(consumers, place.latitude, place.longitude),
