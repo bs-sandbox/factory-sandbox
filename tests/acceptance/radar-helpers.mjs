@@ -53,8 +53,27 @@ export async function setup(page, { body = payload(), mode = "json" } = {}) {
         }),
   );
   await page.route("https://attacker.example/**", (route) => route.fulfill({ status: 200, body: "x" }));
-  await page.goto(BASE_URL);
-  await page.locator('[data-testid="map"]').waitFor();
+  // The map stays hidden until the app has a position (location-map.md), so grant one
+  // and stub the base-map and forecast services (same stubs as helpers/harness.mjs).
+  const ctx = page.context();
+  await ctx.grantPermissions(["geolocation"]);
+  await ctx.setGeolocation({ latitude: 47.6062, longitude: -122.3321 });
+  await page.route("https://tile.openstreetmap.org/**", (route) =>
+    route.fulfill({ status: 200, contentType: "image/png", headers: { "access-control-allow-origin": "*" }, body: PNG }),
+  );
+  await page.route("https://api.open-meteo.com/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify({
+        current: { temperature_2m: 14.0, weather_code: 2 },
+        daily: { time: ["2026-10-20"], temperature_2m_max: [18], temperature_2m_min: [9], weather_code: [61], precipitation_probability_max: [70] },
+      }),
+    }),
+  );
+  await page.goto(process.env.RADAR_BASE_URL ?? "/");
+  await page.locator('[data-testid="map"]').waitFor({ state: "visible" });
   return { rv, tiles, all };
 }
 
