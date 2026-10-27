@@ -10,7 +10,7 @@ const validCoord = (v, max) => typeof v === "number" && Number.isFinite(v) && v 
 // Leaflet resets unwanted tiles to a data: GIF, which the CSP (img-src without data:)
 // blocks. This subclass drops the src attribute instead, so no data: image is requested.
 // It relies on Leaflet 1.9.4 internals (_tiles, _removeTile, _abortLoading); the version is pinned.
-function tileLayerClass(L) {
+export function tileLayerClass(L) {
   return L.TileLayer.extend({
     _removeTile(key) {
       const tile = this._tiles[key];
