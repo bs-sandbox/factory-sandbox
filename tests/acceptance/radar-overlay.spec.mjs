@@ -16,7 +16,7 @@ async function expectOffAfterFailure(page, tiles) {
 }
 
 async function turnOn(page) {
-  await toggle(page).check();
+  await toggle(page).click();
   await expect(stamp(page)).toBeVisible();
 }
 
@@ -30,14 +30,14 @@ test("S1 toggle default: visible, off, no overlay, no timestamp", async ({ page 
 
 test("S2 turning radar on draws overlay and shows on state", async ({ page }) => {
   await setup(page);
-  await toggle(page).check();
+  await toggle(page).click();
   await expect(overlayTiles(page).first()).toBeAttached();
   await expect(toggle(page)).toBeChecked();
 });
 
 test("S3 timestamp from the data source in browser zone", async ({ page }) => {
   await setup(page);
-  await toggle(page).check();
+  await toggle(page).click();
   await expect(page.getByText("Radar updated 2:10 PM PDT", { exact: true })).toBeVisible();
 });
 
@@ -64,7 +64,7 @@ test("S5 attribution text and link visible without interaction", async ({ page }
 for (const mode of ["500", "abort", "tile-abort"]) {
   test(`S6 radar unavailable (${mode}): message, toggle off, base map remains`, async ({ page }) => {
     const { tiles } = await setup(page, { mode });
-    await toggle(page).check();
+    await toggle(page).click();
     await expectOffAfterFailure(page, mode === "tile-abort" ? null : tiles);
   });
 }
@@ -126,7 +126,7 @@ test("S10 no Referer and no Cookie on RainViewer requests", async ({ page, conte
 
 test("S11 tile host fixed, response host ignored", async ({ page }) => {
   const { tiles, all } = await setup(page, { body: payload({ host: "https://attacker.example" }) });
-  await toggle(page).check();
+  await toggle(page).click();
   await expect(overlayTiles(page).first()).toBeAttached();
   expect(tiles.length).toBeGreaterThan(0);
   for (const t of tiles) expect(t.url().startsWith("https://tilecache.rainviewer.com/")).toBe(true);
@@ -151,7 +151,7 @@ for (const [field, value] of S12) {
     const body = payload({ latest });
     body.radar.past = [latest];
     const { tiles } = await setup(page, { body });
-    await toggle(page).check();
+    await toggle(page).click();
     await expectOffAfterFailure(page, tiles);
   });
 }
@@ -164,7 +164,7 @@ for (const [name, mutate] of [
     const body = payload();
     mutate(body);
     const { tiles } = await setup(page, { body });
-    await toggle(page).check();
+    await toggle(page).click();
     await expectOffAfterFailure(page, tiles);
   });
 }
