@@ -1,0 +1,10 @@
+[data-testid="radar-controls"] {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem;
+  width: 100%; overflow-wrap: anywhere;
+}
+[data-testid="radar-controls"] label {
+  display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; min-width: 44px; cursor: pointer;
+}
+[data-testid="radar-controls"] input[type="checkbox"] { width: 1.5rem; height: 1.5rem; margin: 0; }
+[data-testid="radar-controls"] p { margin: 0; }
+[data-testid="radar-controls"] [hidden] { display: none; }

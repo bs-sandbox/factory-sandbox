@@ -191,7 +191,7 @@ test("S12_csp_img_src_exact_and_image_hosts", async ({ browser, baseURL }) => {
     const [k, ...v] = d.split(/\s+/);
     return [k, v.join(" ")];
   }));
-  assert.equal(dirs["img-src"], "'self' https://tile.openstreetmap.org");
+  assert.equal(dirs["img-src"], "'self' https://tile.openstreetmap.org https://tilecache.rainviewer.com");
   assert.equal(dirs["default-src"], "'none'");
   assert.equal(dirs["script-src"], "'self'");
   assert.equal(dirs["style-src"], "'self'");

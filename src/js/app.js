@@ -3,12 +3,14 @@ import { createCitySearch } from "./city-search.js";
 import { createCurrentConditions } from "./current-conditions.js";
 import { createDailyOutlook } from "./daily-outlook.js";
 import { createLocationMap } from "./location-map.js";
+import { createRadarOverlay } from "./radar-overlay.js";
 import { requestLocation } from "./location-source.js";
 import { setLocationAll, startShell } from "./page-shell.js";
 
 const conditions = createCurrentConditions(document.querySelector('[data-testid="conditions-section"]'));
 const outlook = createDailyOutlook(document.querySelector('[data-testid="outlook-section"]'));
 const locationMap = createLocationMap(document.querySelector('[data-testid="map-section"]'));
+createRadarOverlay(document.querySelector('[data-testid="radar-controls"]'), locationMap);
 const consumers = [conditions, outlook, locationMap];
 const citySearch = createCitySearch({
   root: document.querySelector('[data-testid="city-search"]'),
