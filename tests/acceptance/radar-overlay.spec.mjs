@@ -114,6 +114,7 @@ test("S9 no RainViewer traffic before opt-in or after opt-out", async ({ page })
 
 test("S10 no Referer and no Cookie on RainViewer requests", async ({ page, context }) => {
   await context.addCookies([{ name: "probe", value: "1", url: "https://api.rainviewer.com/" }]);
+  await context.addCookies([{ name: "probe", value: "1", url: "https://tilecache.rainviewer.com/" }]);
   const { rv } = await setup(page);
   await turnOn(page);
   expect(rv.length).toBeGreaterThan(0);
