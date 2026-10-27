@@ -228,8 +228,11 @@ test("S14_invalid_coordinates_ignored", async ({ browser, baseURL }) => {
   await settle(page);
   for (const q of ["badlat", "badlon", "badtype"]) {
     const n = log.tiles.length;
-    await searchAndPick(page, q);
+    // LIV-14 contract (city-search.md §2) drops invalid places, so none can be picked; the map must stay unchanged.
+    await page.getByRole("searchbox", { name: "City name" }).fill(q);
+    await page.getByRole("button", { name: "Search" }).click();
     await settle(page);
+    assert.equal(await page.locator('[data-testid="city-search-result-button"]').count(), 0, `${q}: an invalid place was offered`);
     assert.equal(log.tiles.length, n, `${q}: a tile request was made`);
     const o = await markerOffsetFromCentre(page);
     assert.ok(near(o.dx) && near(o.dy), `${q}: marker moved ${JSON.stringify(o)}`);
