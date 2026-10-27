@@ -74,7 +74,7 @@ export function createRadarController(deps) {
     errors = 0;
     layer = leaflet.tileLayer(buildRadarTileUrl(frame.path), {
       tileSize: 256, opacity: 0.7, zIndex: 10, maxNativeZoom: 7, maxZoom: 19,
-      referrerPolicy: "no-referrer", attribution: RADAR_ATTRIBUTION,
+      referrerPolicy: "no-referrer", crossOrigin: "anonymous", attribution: RADAR_ATTRIBUTION,
     });
     layer.on("tileload", guard(g, () => {
       loaded += 1;

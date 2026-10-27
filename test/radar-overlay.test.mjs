@@ -64,9 +64,9 @@ test("on: one request without credentials or referrer; layer options; first tile
   assert.equal(init.cache, "no-store");
   const l = t.layers[0];
   assert.equal(l.opts.referrerPolicy, "no-referrer");
+  assert.equal(l.opts.crossOrigin, "anonymous");
   assert.equal(l.opts.maxNativeZoom, 7);
   assert.equal(l.opts.opacity, 0.7);
-  assert.equal("crossOrigin" in l.opts, false);
   assert.equal(l.url, "https://tilecache.rainviewer.com/v2/radar/bbb222/256/{z}/{x}/{y}/2/1_1.png");
   assert.ok(l.added);
   l.h.tileload();
