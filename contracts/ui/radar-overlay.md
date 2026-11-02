@@ -2,7 +2,8 @@
 
 Version: 1.0.1. Status: Accepted with ADR 0005. Revised before first merge to include the
 LIV-17 [THREAT-MODEL] (comment 10148) controls T1-T5 and test hooks for S9-S13.
-1.0.1 (LIV-48): the tile layer sets `crossOrigin: "anonymous"` (§2), per LIV-17 design
+1.0.1 (LIV-48): the tile layer sets `crossOrigin: "anonymous"` (§2 state-machine table and
+Referrer rule), per LIV-17 design
 amendment A1 (comment 11158) and finding LIV-47. Backward compatible: no selector, export
 or state changes.
 Changes are backward compatible by default. Renaming or removing anything below is a
@@ -72,7 +73,7 @@ interface RadarOverlay {
 |---|---|---|---|
 | (start) | create | render `{checked:false, timestampText:null, unavailable:false}` | off |
 | off | `setOn(true)` | start a new generation; render `{checked:true, timestampText:null, unavailable:false}`; if `locationMap.leafletMap` is null, go to **fail**; otherwise `fetch(RADAR_API_URL, {credentials:"omit", cache:"no-store", referrerPolicy:"no-referrer", signal})` with a 10 s abort | loading |
-| loading | response is 2xx, JSON, and `parseWeatherMaps` is not null | create `leaflet.tileLayer(buildRadarTileUrl(path), {tileSize:256, opacity:0.7, zIndex:10, maxNativeZoom:7, maxZoom:19, referrerPolicy:"no-referrer", attribution:RADAR_ATTRIBUTION})`; count `tileload` and `tileerror`; add it to `leafletMap`; start the 15 s tile timer | loading |
+| loading | response is 2xx, JSON, and `parseWeatherMaps` is not null | create `leaflet.tileLayer(buildRadarTileUrl(path), {tileSize:256, opacity:0.7, zIndex:10, maxNativeZoom:7, maxZoom:19, referrerPolicy:"no-referrer", crossOrigin:"anonymous", attribution:RADAR_ATTRIBUTION})`; count `tileload` and `tileerror`; add it to `leafletMap`; start the 15 s tile timer | loading |
 | loading | first `tileload` | clear the tile timer; render `{checked:true, timestampText:formatRadarTimestamp(time), unavailable:false}` | on |
 | loading | network error, abort or timeout, non-2xx, bad JSON, `parseWeatherMaps` returns null, first layer `load` with 0 `tileload` and ≥1 `tileerror`, the tile timer fires, or any exception (including one thrown by `formatRadarTimestamp`, `render`, or Leaflet inside a callback) | **fail**: remove the layer if it was added and clear timers; render `{checked:false, timestampText:null, unavailable:true}` | off |
 | loading or on | `setOn(false)` | abort the fetch, clear timers, remove the layer; render `{checked:false, timestampText:null, unavailable:false}` | off |
