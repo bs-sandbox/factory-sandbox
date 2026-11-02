@@ -1,6 +1,6 @@
 # 0005. Radar overlay: RainViewer past-radar tiles as a Leaflet layer on the location map
-Status: Proposed
-Date: 2026-10-20
+Status: Accepted
+Date: 2026-10-20 (amended 2026-11-02, LIV-48: tile layer sets `crossOrigin: "anonymous"`)
 
 Context:
 - LIV-17 (Epic LIV-12, capability 4) adds a "Radar" toggle to the location map of LIV-16.
@@ -29,6 +29,12 @@ Context:
     At z8 and z10 it returned the same 1370-byte image (same SHA-256 for different x/y), so
     the free tier serves a placeholder above z7. An unknown frame path returned 404.
   - The requests sent no Referer and no Origin, and they were served.
+- Second probe on 2026-10-27 (curl with `Origin: http://localhost:4173`, run by the
+  Architect, LIV-17 comment 11158): a tilecache tile `GET` returned 200 `image/png` with
+  `access-control-allow-origin: *` and no `Set-Cookie`, so CORS-mode tiles load.
+- Security Review on LIV-17 (finding LIV-47) found that tile `<img>` requests without
+  `crossOrigin` are no-cors and carry the browser's cookies for the tile host, so S10
+  (no Cookie header) was not met by the original item 5.
 - RainViewer API page (https://www.rainviewer.com/api.html, read 2026-10-20) says:
   "free for personal or educational use". Attribution such as "Weather data by RainViewer"
   with a link to rainviewer.com is mandatory. There is no key, no SLA and no posted rate
@@ -68,8 +74,10 @@ Decision:
    - Template: `https://tilecache.rainviewer.com{path}/256/{z}/{x}/{y}/2/1_1.png`, which
      uses colour scheme 2 and options `1_1` (smoothed, snow shown).
    - Options: `tileSize: 256`, `opacity: 0.7`, `zIndex: 10`, `maxNativeZoom: 7`,
-     `maxZoom: 19`, `referrerPolicy: "no-referrer"`, and the attribution in item 7.
-     `crossOrigin` is not set.
+     `maxZoom: 19`, `referrerPolicy: "no-referrer"`, `crossOrigin: "anonymous"`, and the
+     attribution in item 7. `crossOrigin: "anonymous"` makes tile requests CORS-mode with
+     credentials same-origin, so no cookie is sent to the tile host (S10). A missing CORS
+     header surfaces as `tileerror` and follows item 6.
    - With `maxNativeZoom: 7`, Leaflet requests z≤7 tiles and scales them up, so the
      placeholder tiles above z7 are never requested.
    - The layer is created on each turn-on and removed on turn-off or failure.
@@ -151,5 +159,6 @@ Consequences:
 - Follow-up: if RainViewer's terms or limits change, the provider decision is revisited
   through a new ADR.
 
-Related: LIV-12 (Epic), LIV-17, LIV-16 / ADR 0001, LIV-13 / ADR 0004, ADR 0002;
+Related: LIV-12 (Epic), LIV-17, LIV-47 / LIV-48 (crossOrigin amendment), LIV-16 / ADR 0001,
+LIV-13 / ADR 0004, ADR 0002;
 contract `contracts/ui/radar-overlay.md`.
