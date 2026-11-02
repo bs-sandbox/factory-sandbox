@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 const html = readFileSync(new URL("../src/index.html", import.meta.url), "utf8");
 
-const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://tile.openstreetmap.org; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com; base-uri 'none'; form-action 'none'; object-src 'none'";
+const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://tile.openstreetmap.org https://tilecache.rainviewer.com; connect-src https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.rainviewer.com; base-uri 'none'; form-action 'none'; object-src 'none'";
 
 test("CSP meta is pinned exactly and is the first element after charset", () => {
   const m = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)">/);
@@ -53,4 +53,26 @@ test("css follows the layout contract", () => {
   assert.match(css, /max-width: 40rem/);
   assert.match(css, /\[hidden\] \{ display: none !important; \}/);
   assert.match(css, /min-height: 44px/);
+});
+
+test("CSP directives parse to the exact expected map (LIV-17 T4)", () => {
+  const m = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)">/);
+  const parsed = Object.fromEntries(m[1].split(";").map((d) => d.trim().split(/\s+/)).map(([k, ...v]) => [k, v]));
+  assert.deepStrictEqual(parsed, {
+    "default-src": ["'none'"],
+    "script-src": ["'self'"],
+    "style-src": ["'self'"],
+    "img-src": ["'self'", "https://tile.openstreetmap.org", "https://tilecache.rainviewer.com"],
+    "connect-src": ["https://api.open-meteo.com", "https://geocoding-api.open-meteo.com", "https://api.rainviewer.com"],
+    "base-uri": ["'none'"],
+    "form-action": ["'none'"],
+    "object-src": ["'none'"],
+  });
+});
+
+test("radar bar sits in map-section before the map, with static selectors", () => {
+  const i = html.indexOf('data-testid="radar-controls"');
+  assert.ok(i > html.indexOf('data-testid="map-section"') && i < html.indexOf('data-testid="map"></div>'));
+  assert.match(html, /<input type="checkbox" role="switch" data-testid="radar-toggle">/);
+  assert.match(html, /css\/radar\.css/);
 });
