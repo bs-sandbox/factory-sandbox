@@ -1,7 +1,10 @@
 # UI and module contract: radar overlay (LIV-17)
 
-Version: 1.0.0. Status: Proposed with ADR 0005. Revised before first merge to include the
+Version: 1.0.1. Status: Accepted with ADR 0005. Revised before first merge to include the
 LIV-17 [THREAT-MODEL] (comment 10148) controls T1-T5 and test hooks for S9-S13.
+1.0.1 (LIV-48): the tile layer sets `crossOrigin: "anonymous"` (§2), per LIV-17 design
+amendment A1 (comment 11158) and finding LIV-47. Backward compatible: no selector, export
+or state changes.
 Changes are backward compatible by default. Renaming or removing anything below is a
 breaking change, which needs a new version and makes the change Tier 3.
 Depends on `contracts/ui/location-map.md` v1.0.0 (`LocationMap.leafletMap`, `[data-testid="map-section"]`,
@@ -100,8 +103,15 @@ Rules:
   `credentials: "omit"`; the tile layer uses the option `referrerPolicy: "no-referrer"`.
   Leaflet 1.9.4 copies that string onto each tile `<img>` in `createTile`
   (`dist/leaflet-src.js` lines 12178-12179, checked 2026-10-20), so no override is needed.
-  `crossOrigin` is not set. The document-wide referrer policy is not changed, because the
-  OSM base map (LIV-16) relies on the default policy.
+  The tile layer also sets `crossOrigin: "anonymous"`. Leaflet's `createTile` copies it
+  onto each tile `<img>`, so tile requests go in CORS mode with credentials same-origin and
+  send no cookies to `tilecache.rainviewer.com` (S10). Without it, an `<img>` is a no-cors
+  request and the browser sends that host's cookies (finding LIV-47). The tile host returns
+  `access-control-allow-origin: *` (probe 2026-10-27, ADR 0005 Context). If that header is
+  ever missing, tiles fire `tileerror` and the existing failure rules (ending in "off after
+  failure") apply; there is no new state or message.
+  The document-wide referrer policy is not changed, because the OSM base map (LIV-16)
+  relies on the default policy.
 
 ## 3. DOM contract (stable selectors QA targets)
 
